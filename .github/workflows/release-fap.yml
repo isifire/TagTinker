@@ -1,0 +1,37 @@
+name: Release FAP
+
+on:
+  push:
+    branches: [release]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build FAP
+        uses: flipperdevices/flipperzero-ufbt-action@v0.1
+        with:
+          app-dir: .
+          task: build
+          sdk-channel: release
+          sdk-hw-target: f7
+
+      - name: Verify FAP
+        run: test -s dist/tagtinker.fap
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="release-${GITHUB_SHA}"
+          gh release create "$tag" dist/tagtinker.fap \
+            --target "$GITHUB_SHA" \
+            --title "TagTinker ${GITHUB_SHA::7}" \
+            --notes "Automatic FAP build from release branch commit ${GITHUB_SHA}." \
+            --prerelease
